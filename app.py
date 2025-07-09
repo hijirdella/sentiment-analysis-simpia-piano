@@ -5,12 +5,12 @@ from datetime import datetime
 import pytz
 
 # --- Load model dan komponen ---
-model = joblib.load('RidgeClassifier - Perfect Piano.pkl')
-vectorizer = joblib.load('tfidf_vectorizer_Perfect Piano.pkl')
-label_encoder = joblib.load('label_encoder_Perfect Piano.pkl')
+model = joblib.load('GradientBoostingClassifier - Simpia Learn Piano Fast.pkl')
+vectorizer = joblib.load('tfidf_vectorizer_Simpia Learn Piano Fast.pkl')
+label_encoder = joblib.load('label_encoder_Simpia Learn Piano Fast.pkl')
 
 # --- Judul App ---
-st.title("🎹 Sentiment Analysis - Perfect Piano App")
+st.title("🎹 Sentiment Analysis - Simpia Learn Piano Fast")
 
 # --- Pilih Mode ---
 st.header("Pilih Metode Input")
@@ -33,7 +33,7 @@ if input_mode == "📝 Input Manual":
     review_day = st.date_input("📅 Tanggal Submit:", value=now_wib.date())
     review_time = st.time_input("⏰ Waktu Submit:", value=now_wib.time())
 
-    # Gabungkan tanggal dan waktu (tanpa menggeser waktu)
+    # Gabungkan tanggal dan waktu
     review_datetime = datetime.combine(review_day, review_time)
     review_datetime_wib = wib.localize(review_datetime)
     review_date_str = review_datetime_wib.strftime("%Y-%m-%d %H:%M")
@@ -46,7 +46,6 @@ if input_mode == "📝 Input Manual":
             pred = model.predict(vec)
             label = label_encoder.inverse_transform(pred)[0]
 
-            # Buat hasil sebagai DataFrame
             result_df = pd.DataFrame([{
                 "name": name if name else "(Anonim)",
                 "star_rating": star_rating,
@@ -58,12 +57,11 @@ if input_mode == "📝 Input Manual":
             st.success("✅ Prediksi berhasil!")
             st.dataframe(result_df)
 
-            # Tombol Download
             csv_manual = result_df.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Hasil Manual sebagai CSV",
                 data=csv_manual,
-                file_name="manual_review_prediction_perfect_piano.csv",
+                file_name="manual_review_prediction_simpia.csv",
                 mime="text/csv"
             )
 
@@ -78,11 +76,9 @@ else:
         try:
             df = pd.read_csv(uploaded_file)
 
-            # Validasi kolom
             if 'review' not in df.columns:
                 st.error("❌ File harus memiliki kolom 'review'.")
             else:
-                # Prediksi
                 X_vec = vectorizer.transform(df['review'].fillna(""))
                 y_pred = model.predict(X_vec)
                 df['predicted_sentiment'] = label_encoder.inverse_transform(y_pred)
@@ -90,12 +86,11 @@ else:
                 st.success("✅ Prediksi berhasil!")
                 st.dataframe(df.head())
 
-                # Download hasil
                 csv_result = df.to_csv(index=False).encode('utf-8')
                 st.download_button(
                     label="📥 Download Hasil CSV",
                     data=csv_result,
-                    file_name="predicted_reviews_perfect_piano.csv",
+                    file_name="predicted_reviews_simpia.csv",
                     mime="text/csv"
                 )
         except Exception as e:
