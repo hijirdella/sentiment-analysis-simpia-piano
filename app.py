@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pytz
 from datetime import datetime
+from matplotlib.ticker import MultipleLocator
 
 # === Load model dan komponen ===
 model = joblib.load('GradientBoostingClassifier - Simpia Learn Piano Fast.pkl')
@@ -15,6 +16,7 @@ label_map = {'positive': 'Positif', 'negative': 'Negatif'}
 color_map = {'Positif': 'blue', 'Negatif': 'red'}
 
 # === Judul Aplikasi ===
+st.set_page_config(page_title="🎹 Sentiment App – Simpia Piano", layout="centered")
 st.title("🎹 Aplikasi Analisis Sentimen – Simpia Learn Piano Fast")
 
 # === Pilih Mode Input ===
@@ -126,13 +128,18 @@ else:
                 bar_data.columns = ['Sentimen', 'Jumlah']
                 colors = [color_map.get(sent, 'gray') for sent in bar_data['Sentimen']]
 
-                fig_bar, ax_bar = plt.subplots()
+                fig_bar, ax_bar = plt.subplots(figsize=(6, 4))
                 bars = ax_bar.bar(bar_data['Sentimen'], bar_data['Jumlah'], color=colors)
 
                 for bar in bars:
                     height = bar.get_height()
                     ax_bar.text(bar.get_x() + bar.get_width() / 2, height + 0.5, f'{int(height)}',
                                 ha='center', va='bottom', fontsize=10)
+
+                # Sumbu Y: bilangan bulat, interval 5
+                ax_bar.yaxis.set_major_locator(MultipleLocator(5))
+                max_count = bar_data['Jumlah'].max()
+                ax_bar.set_ylim(0, ((max_count // 5) + 1) * 5)
 
                 ax_bar.set_ylabel("Jumlah")
                 ax_bar.set_xlabel("Sentimen")
@@ -154,7 +161,8 @@ else:
                     labels=pie_data.index,
                     colors=pie_colors,
                     autopct=lambda pct: autopct_format(pct, pie_data),
-                    startangle=90
+                    startangle=90,
+                    textprops={'fontsize': 10}
                 )
                 ax_pie.axis('equal')
                 st.pyplot(fig_pie)
