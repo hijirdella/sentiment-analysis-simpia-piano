@@ -127,21 +127,21 @@ else:
                 fig_bar, ax_bar = plt.subplots(figsize=(6, 4))
                 bars = ax_bar.bar(bar_data['Sentimen'], bar_data['Jumlah'], color=colors)
 
-                # Tambahkan label angka dengan spasi dan pemisah ribuan
+                # Tambahkan label angka DI DALAM batang
                 for bar in bars:
                     height = bar.get_height()
                     ax_bar.text(
                         bar.get_x() + bar.get_width() / 2,
-                        height + max(bar_data['Jumlah']) * 0.04,
+                        height * 0.9,
                         f'{height:,.0f}'.replace(',', '.'),
-                        ha='center', va='bottom', fontsize=10
+                        ha='center', va='center', fontsize=10, color='white'
                     )
 
-                ax_bar.yaxis.set_major_locator(MultipleLocator(50))
+                ax_bar.yaxis.set_major_locator(MultipleLocator(100))
                 ax_bar.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x):,}'.replace(',', '.')))
 
                 max_count = bar_data['Jumlah'].max()
-                ax_bar.set_ylim(0, ((max_count // 50) + 1) * 50)
+                ax_bar.set_ylim(0, ((max_count // 100) + 2) * 100)
 
                 ax_bar.set_ylabel("Jumlah")
                 ax_bar.set_xlabel("Sentimen")
