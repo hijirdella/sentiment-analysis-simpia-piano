@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pytz
 from datetime import datetime
-from matplotlib.ticker import MultipleLocator, FuncFormatter
+from matplotlib.ticker import MultipleLocator
 
 # === Load model dan komponen ===
 model = joblib.load('GradientBoostingClassifier - Simpia Learn Piano Fast.pkl')
@@ -37,7 +37,7 @@ if input_mode == "📝 Input Manual":
     star_rating = st.selectbox("⭐ Rating Bintang:", [1, 2, 3, 4, 5])
     user_review = st.text_area("💬 Tulis Review Pengguna:")
 
-    review_day = st.date_input("🗓️ Tanggal:", value=now_wib.date())
+    review_day = st.date_input("🗕️ Tanggal:", value=now_wib.date())
     review_time = st.time_input("⏰ Waktu:", value=now_wib.time())
 
     review_datetime = datetime.combine(review_day, review_time)
@@ -97,6 +97,7 @@ else:
 
                 st.success("Prediksi berhasil!")
 
+                # === Filter Tanggal ===
                 min_date = df['date'].min().date()
                 max_date = df['date'].max().date()
 
@@ -106,12 +107,14 @@ else:
 
                 filtered_df = df[(df['date'].dt.date >= start_date) & (df['date'].dt.date <= end_date)]
 
+                # === Filter Sentimen ===
                 sentiment_option = st.selectbox("🎯 Filter Sentimen:", ["Semua", "Positif", "Negatif"])
                 if sentiment_option == "Positif":
                     filtered_df = filtered_df[filtered_df['predicted_sentiment'] == "positive"]
                 elif sentiment_option == "Negatif":
                     filtered_df = filtered_df[filtered_df['predicted_sentiment'] == "negative"]
 
+                # === Tampilkan Tabel ===
                 st.dataframe(
                     filtered_df[['name', 'star_rating', 'date', 'review', 'predicted_sentiment']],
                     use_container_width=True,
@@ -130,28 +133,29 @@ else:
 
                 for bar in bars:
                     height = bar.get_height()
-                    ax_bar.text(bar.get_x() + bar.get_width() / 2, height + 0.01 * height,
-                                f'{int(height):,}'.replace(',', '.'),
-                                ha='center', va='bottom', fontsize=10)
+                    ax_bar.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        height + max(5, height * 0.03),
+                        f"{height:,}".replace(",", "."),
+                        ha='center', va='bottom', fontsize=10
+                    )
 
+                ax_bar.yaxis.set_major_locator(MultipleLocator(50))
                 max_count = bar_data['Jumlah'].max()
-                step = max(5, round(max_count / 10))
-                ax_bar.yaxis.set_major_locator(MultipleLocator(step))
-                ax_bar.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x):,}'.replace(',', '.')))
-
+                ax_bar.set_ylim(0, ((max_count // 50) + 1) * 50)
                 ax_bar.set_ylabel("Jumlah")
                 ax_bar.set_xlabel("Sentimen")
                 ax_bar.set_title("Distribusi Sentimen Pengguna – Simpia Learn Piano Fast")
                 st.pyplot(fig_bar)
 
                 # === Pie Chart ===
-                st.subheader("🥧 Distribusi Sentimen – Diagram Pai")
+                st.subheader("🧵 Distribusi Sentimen – Diagram Pai")
                 pie_data = sentimen_bahasa.value_counts()
                 pie_colors = [color_map.get(sent, 'gray') for sent in pie_data.index]
 
                 def autopct_format(pct, allvals):
                     absolute = int(round(pct / 100. * sum(allvals)))
-                    return f"{pct:.1f}%\n({absolute:,})".replace(',', '.')
+                    return f"{pct:.1f}%\n({absolute:,})".replace(",", ".")
 
                 fig_pie, ax_pie = plt.subplots()
                 ax_pie.pie(
@@ -165,6 +169,7 @@ else:
                 ax_pie.axis('equal')
                 st.pyplot(fig_pie)
 
+                # === Unduh CSV ===
                 csv_result = filtered_df.to_csv(index=False).encode('utf-8')
                 st.download_button(
                     label="📅 Unduh Hasil CSV",
