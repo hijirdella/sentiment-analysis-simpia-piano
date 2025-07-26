@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pytz
 from datetime import datetime
-from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import MultipleLocator, FuncFormatter
 
 # === Load model dan komponen ===
 model = joblib.load('GradientBoostingClassifier - Simpia Learn Piano Fast.pkl')
@@ -32,11 +32,9 @@ now_wib = datetime.now(wib)
 # ========================================
 if input_mode == "📝 Input Manual":
     st.subheader("🧾 Masukkan Satu Review Pengguna")
-
     name = st.text_input("👤 Nama Pengguna:")
     star_rating = st.selectbox("⭐ Rating Bintang:", [1, 2, 3, 4, 5])
     user_review = st.text_area("💬 Tulis Review Pengguna:")
-
     review_day = st.date_input("📅 Tanggal:", value=now_wib.date())
     review_time = st.time_input("⏰ Waktu:", value=now_wib.time())
 
@@ -46,7 +44,7 @@ if input_mode == "📝 Input Manual":
 
     if st.button("🚀 Prediksi Sentimen"):
         if user_review.strip() == "":
-            st.warning("⚠️ Silakan isi review terlebih dahulu.")
+            st.warning("Silakan isi review terlebih dahulu.")
         else:
             vec = vectorizer.transform([user_review])
             pred = model.predict(vec)
@@ -60,12 +58,12 @@ if input_mode == "📝 Input Manual":
                 "predicted_sentiment": label
             }])
 
-            st.success(f"✅ Sentimen terdeteksi: **{label_map[label]}**")
+            st.success(f"Sentimen terdeteksi: **{label_map[label]}**")
             st.dataframe(result_df, use_container_width=True, height=200)
 
             csv_manual = result_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📅 Unduh Hasil sebagai CSV",
+                label="📥 Unduh Hasil sebagai CSV",
                 data=csv_manual,
                 file_name="hasil_prediksi_manual_Simpia_Learn_Piano_Fast.csv",
                 mime="text/csv"
@@ -77,7 +75,7 @@ if input_mode == "📝 Input Manual":
 else:
     st.subheader("📄 Unggah File CSV Review")
     uploaded_file = st.file_uploader(
-        "Pilih file CSV (harus memiliki kolom: 'name', 'star_rating', 'date', 'review')",
+        "Pilih file CSV (dengan kolom: 'name', 'star_rating', 'date', 'review')",
         type=['csv']
     )
 
@@ -88,19 +86,18 @@ else:
 
             required_cols = {'name', 'star_rating', 'date', 'review'}
             if not required_cols.issubset(df.columns):
-                st.error(f"❌ File harus memiliki kolom: {', '.join(required_cols)}.")
+                st.error(f"File harus memiliki kolom: {', '.join(required_cols)}.")
             else:
                 df['review'] = df['review'].fillna("")
                 X_vec = vectorizer.transform(df['review'])
                 y_pred = model.predict(X_vec)
                 df['predicted_sentiment'] = label_encoder.inverse_transform(y_pred)
 
-                st.success("✅ Prediksi berhasil!")
+                st.success("Prediksi berhasil!")
 
                 # === Filter Tanggal ===
                 min_date = df['date'].min().date()
                 max_date = df['date'].max().date()
-
                 st.subheader("🗓️ Filter Rentang Tanggal")
                 start_date = st.date_input("Mulai", min_value=min_date, max_value=max_date, value=min_date)
                 end_date = st.date_input("Selesai", min_value=min_date, max_value=max_date, value=max_date)
@@ -114,7 +111,6 @@ else:
                 elif sentiment_option == "Negatif":
                     filtered_df = filtered_df[filtered_df['predicted_sentiment'] == "negative"]
 
-                # === Tampilkan Tabel ===
                 st.dataframe(
                     filtered_df[['name', 'star_rating', 'date', 'review', 'predicted_sentiment']],
                     use_container_width=True,
@@ -131,16 +127,22 @@ else:
                 fig_bar, ax_bar = plt.subplots(figsize=(6, 4))
                 bars = ax_bar.bar(bar_data['Sentimen'], bar_data['Jumlah'], color=colors)
 
-                offset = max(bar_data['Jumlah'].max() * 0.01, 5)
+                # Tambahkan label angka dengan spasi dan pemisah ribuan
                 for bar in bars:
                     height = bar.get_height()
-                    ax_bar.text(bar.get_x() + bar.get_width() / 2, height + offset, 
-                                f'{int(height):,}'.replace(',', '.'), 
-                                ha='center', va='bottom', fontsize=10)
+                    ax_bar.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        height + max(bar_data['Jumlah']) * 0.04,
+                        f'{height:,.0f}'.replace(',', '.'),
+                        ha='center', va='bottom', fontsize=10
+                    )
 
-                ax_bar.yaxis.set_major_locator(MultipleLocator(20))
+                ax_bar.yaxis.set_major_locator(MultipleLocator(50))
+                ax_bar.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x):,}'.replace(',', '.')))
+
                 max_count = bar_data['Jumlah'].max()
-                ax_bar.set_ylim(0, max_count + offset * 4)
+                ax_bar.set_ylim(0, ((max_count // 50) + 1) * 50)
+
                 ax_bar.set_ylabel("Jumlah")
                 ax_bar.set_xlabel("Sentimen")
                 ax_bar.set_title("Distribusi Sentimen Pengguna – Simpia Learn Piano Fast")
@@ -170,11 +172,11 @@ else:
                 # === Unduh CSV ===
                 csv_result = filtered_df.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label="📅 Unduh Hasil CSV",
+                    label="📥 Unduh Hasil CSV",
                     data=csv_result,
                     file_name="hasil_prediksi_Simpia_Learn_Piano_Fast.csv",
                     mime="text/csv"
                 )
 
         except Exception as e:
-            st.error(f"❌ Terjadi kesalahan saat membaca file: {e}")
+            st.error(f"Terjadi kesalahan saat membaca file: {e}")
